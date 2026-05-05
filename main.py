@@ -40,7 +40,12 @@ app = FastAPI()
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
 origins = [
-    "http://localhost:5173",  # React app
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "http://localhost:5500", 
+    "http://127.0.0.1:5500",  
+    "http://localhost:8000",
+    "http://127.0.0.1:8000",  
 ]
 app.add_middleware(
     CORSMiddleware,
@@ -67,7 +72,7 @@ app.add_middleware(
 # allow_headers=["*"],
 # )
 
-# Create tables on startup
+# Create tables 
 Base.metadata.create_all(bind=engine)
 
 
@@ -82,7 +87,7 @@ def read_root():
     return {"Duka FastAPI": "Version 1.0"}
 
 
-# Register
+
 @app.post("/register", response_model=UserGetRegister)
 def register_user(user: UserPostRegister, db: Session = Depends(get_db)):
     if db.scalar(select(User).where(User.email == user.email)):
@@ -103,7 +108,6 @@ def register_user(user: UserPostRegister, db: Session = Depends(get_db)):
     db.refresh(new_user)
     return new_user
 
-# Login
 
 
 # @app.post("/login", response_model=Token)
@@ -159,7 +163,7 @@ def get_users(
     return db.scalars(select(User)).all()
 
 
-# Products
+
 @app.get("/products", response_model=list[ProductGetMap])
 def get_products(
     db: Session = Depends(get_db),
@@ -180,7 +184,7 @@ def create_product(product: ProductPostMap,
     return model
 
 
-# Sales
+
 @app.get("/sales", response_model=list[SaleGetMap])
 def get_sales(
         db: Session = Depends(get_db),
@@ -211,7 +215,7 @@ def create_sale(
     return model
 
 
-# Purchases
+
 @app.get("/purchase", response_model=list[PurchaseGetMap])
 def get_purchases(
         db: Session = Depends(get_db),
@@ -235,7 +239,6 @@ def create_purchase(
     db.refresh(new_purchase)
     return new_purchase
 
-# Dashboard
 
 
 @app.get("/dashboard/spp", response_model=List[SalesPerProductOut])
@@ -441,6 +444,7 @@ Amount Paid: {amount}
 @app.get("/payments", response_model=List[PaymentResponse])
 def get_all_payments(db: Session = Depends(get_db)):
     return db.query(Payment).all()
+
 
     # store
     # Payment id,sale_id,trans_code,trans_amount,phone_paid,created_at

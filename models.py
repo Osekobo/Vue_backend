@@ -8,7 +8,7 @@ from sqlalchemy.orm import relationship, sessionmaker
 from datetime import datetime
 
 
-DATABASE_URL = "postgresql://postgres:12039@localhost:5432/fast_api"
+DATABASE_URL = "postgresql://postgres:12039@localhost:5432/vue"
 
 engine = create_engine(DATABASE_URL)
 
@@ -61,7 +61,7 @@ class Sale(Base):
         DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
     )
 
-    # Relationship with SalesDetails
+
     details: Mapped[List["SalesDetails"]] = relationship(
         back_populates="sale",
         cascade="all, delete-orphan"
@@ -106,7 +106,7 @@ class Purchase(Base):
         DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
     )
 
-    # Relationship to Product
+    
     product: Mapped["Product"] = relationship(back_populates="purchases")
 
 
@@ -120,7 +120,7 @@ class User(Base):
     email: Mapped[str] = mapped_column(
         String(256), unique=True, nullable=False)
     password: Mapped[str] = mapped_column(
-        String(256), nullable=False)  # hashed password
+        String(256), nullable=False)  
     created_at: Mapped[datetime] = mapped_column(
         DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(
