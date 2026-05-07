@@ -243,7 +243,7 @@ def create_purchase(
 
 @app.get("/dashboard/spp", response_model=List[SalesPerProductOut])
 def get_sales_per_product(db: Session = Depends(get_db),
-                          # current_user: User = Depends(get_current_user),
+                          current_user: User = Depends(get_current_user),
                           ):
 
     sales_data = db.execute(
@@ -272,7 +272,7 @@ def get_sales_per_product(db: Session = Depends(get_db),
 
 @app.get("/dashboard/rpp", response_model=List[RemainingPerProductOut])
 def get_remaining_per_product(db: Session = Depends(get_db),
-                              # current_user: User = Depends(get_current_user),
+                              current_user: User = Depends(get_current_user),
                               ):
 
     purchased_subq = (
@@ -321,7 +321,7 @@ def get_remaining_per_product(db: Session = Depends(get_db),
 
 @app.get("/dashboard/ppp", response_model=List[ProfitPerProduct])
 def get_profit_per_product(db: Session = Depends(get_db),
-                           # current_user: User = Depends(get_current_user),
+                           current_user: User = Depends(get_current_user),
                            ):
     rows = db.execute(
         select(
@@ -356,7 +356,7 @@ def get_profit_per_product(db: Session = Depends(get_db),
 
 @app.get("/dashboard/ppd", response_model=List[ProfitPerDay])
 def get_profit_per_day(db: Session = Depends(get_db),
-                       # current_user: User = Depends(get_current_user),
+                       current_user: User = Depends(get_current_user),
                        ):
     rows = db.execute(
         select(
