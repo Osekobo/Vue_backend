@@ -42,10 +42,10 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 30
 origins = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
-    "http://localhost:5500", 
-    "http://127.0.0.1:5500",  
+    "http://localhost:5500",
+    "http://127.0.0.1:5500",
     "http://localhost:8000",
-    "http://127.0.0.1:8000",  
+    "http://127.0.0.1:8000",
 ]
 app.add_middleware(
     CORSMiddleware,
@@ -72,7 +72,6 @@ app.add_middleware(
 # allow_headers=["*"],
 # )
 
-# Create tables 
 Base.metadata.create_all(bind=engine)
 
 
@@ -85,7 +84,6 @@ def create_tables():
 @app.get("/")
 def read_root():
     return {"Duka FastAPI": "Version 1.0"}
-
 
 
 @app.post("/register", response_model=UserGetRegister)
@@ -107,7 +105,6 @@ def register_user(user: UserPostRegister, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(new_user)
     return new_user
-
 
 
 # @app.post("/login", response_model=Token)
@@ -163,7 +160,6 @@ def get_users(
     return db.scalars(select(User)).all()
 
 
-
 @app.get("/products", response_model=list[ProductGetMap])
 def get_products(
     db: Session = Depends(get_db),
@@ -182,7 +178,6 @@ def create_product(product: ProductPostMap,
     db.commit()
     db.refresh(model)
     return model
-
 
 
 @app.get("/sales", response_model=list[SaleGetMap])
@@ -215,7 +210,6 @@ def create_sale(
     return model
 
 
-
 @app.get("/purchase", response_model=list[PurchaseGetMap])
 def get_purchases(
         db: Session = Depends(get_db),
@@ -238,7 +232,6 @@ def create_purchase(
     db.commit()
     db.refresh(new_purchase)
     return new_purchase
-
 
 
 @app.get("/dashboard/spp", response_model=List[SalesPerProductOut])
@@ -396,11 +389,13 @@ def stk_push(payload: dict, db: Session = Depends(get_db)):
             merchant_request_id=response.get("MerchantRequestID"),
             checkout_request_id=response.get("CheckoutRequestID"),
             phone_paid=payload["phone_number"],
-            trans_amount=payload["amount"]
+            trans_amount=payload["amount"],
+            status="Pending"
         )
         db.add(payment)
         db.commit()
         db.refresh(payment)
+        print(f"Payment saved: id={payment.id}, checkout_id={payment.checkout_request_id}, status={payment.status}")
         return response
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))from e
@@ -444,7 +439,6 @@ Amount Paid: {amount}
 @app.get("/payments", response_model=List[PaymentResponse])
 def get_all_payments(db: Session = Depends(get_db)):
     return db.query(Payment).all()
-
 
     # store
     # Payment id,sale_id,trans_code,trans_amount,phone_paid,created_at

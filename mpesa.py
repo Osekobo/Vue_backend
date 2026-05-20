@@ -39,37 +39,44 @@ def get_mpesa_access_token():
             auth=HTTPBasicAuth(consumer_key, consumer_secret),
         )
         token = res.json()['access_token']
-
+        return token
     except Exception as e:
         print(str(e), "error getting access token")
         raise e
 
-    return token
+    # return token
 
 
-myToken = get_mpesa_access_token()
-print(myToken)
+# myToken = get_mpesa_access_token()
+# print(myToken)
 
-timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+# timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
 
-headers = {
-    "Authorization": f"Bearer {myToken}",
-    "Content-Type": "application/json"
-}
+# `headers = {
+#     "Authorization": f"Bearer {myToken}",
+#     "Content-Type": "application/json"
+# }`
 
 
 def generate_password():
+    timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
     password_str = short_code + pass_key + timestamp
     password_bytes = password_str.encode()
 
-    return base64.b64encode(password_bytes).decode("utf-8")
+    return base64.b64encode(password_bytes).decode("utf-8"), timestamp
 
 
-password = generate_password()
-print(password)
+# password = generate_password()
+# print(password)
 
 
 def make_stk_push(payload):
+    myToken = get_mpesa_access_token()
+    headers = {
+        "Authorization": f"Bearer {myToken}",
+        "Content-Type": "application/json"
+    }
+    password, timestamp = generate_password()
     amount = payload['amount']
     phone_number = payload['phone_number']
     push_data = {

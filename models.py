@@ -8,9 +8,14 @@ from sqlalchemy.orm import relationship, sessionmaker
 from datetime import datetime
 
 
-DATABASE_URL = "postgresql://postgres:12039@localhost:5432/vue"
+# DATABASE_URL = "postgresql://postgres:12039@localhost:5432/vue"
+DATABASE_URL = "sqlite:///./vue.db"
 
-engine = create_engine(DATABASE_URL)
+# engine = create_engine(DATABASE_URL)
+engine = create_engine(
+    DATABASE_URL,
+    connect_args={"check_same_thread": False}
+)
 
 SessionLocal = sessionmaker(
     autocommit=False,
@@ -61,7 +66,6 @@ class Sale(Base):
         DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
     )
 
-
     details: Mapped[List["SalesDetails"]] = relationship(
         back_populates="sale",
         cascade="all, delete-orphan"
@@ -106,7 +110,6 @@ class Purchase(Base):
         DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
     )
 
-    
     product: Mapped["Product"] = relationship(back_populates="purchases")
 
 
@@ -120,7 +123,7 @@ class User(Base):
     email: Mapped[str] = mapped_column(
         String(256), unique=True, nullable=False)
     password: Mapped[str] = mapped_column(
-        String(256), nullable=False)  
+        String(256), nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(
@@ -136,4 +139,5 @@ class Payment(Base):
     trans_code = Column(String, nullable=True)
     trans_amount = Column(Float, nullable=True)
     phone_paid = Column(String, nullable=True)
+    status = Column(String, default="Pending")
     created_at = Column(DateTime, default=datetime.utcnow)
