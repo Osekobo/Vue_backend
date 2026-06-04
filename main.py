@@ -46,6 +46,9 @@ origins = [
     "http://127.0.0.1:5500",
     "http://localhost:8000",
     "http://127.0.0.1:8000",
+
+    "http://localhost:8080",
+    "http://127.0.0.1:8080",
 ]
 app.add_middleware(
     CORSMiddleware,
@@ -124,10 +127,11 @@ def login_user(user: UserPostLogin, response: Response, db: Session = Depends(ge
     # return Token(access_token=access_token, token_type="bearer")
     response.set_cookie(
         key="access_token",
-        value=access_token,
+        # value=access_token,
         httponly=True,
         secure=False,
         samesite="lax"
+        # max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60  # Expires in minutes
     )
     # return Token(access_token=access_token, token_type="bearer")
     return {
@@ -395,7 +399,8 @@ def stk_push(payload: dict, db: Session = Depends(get_db)):
         db.add(payment)
         db.commit()
         db.refresh(payment)
-        print(f"Payment saved: id={payment.id}, checkout_id={payment.checkout_request_id}, status={payment.status}")
+        print(
+            f"Payment saved: id={payment.id}, checkout_id={payment.checkout_request_id}, status={payment.status}")
         return response
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))from e
