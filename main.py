@@ -128,11 +128,11 @@ def login_user(user: UserPostLogin, response: Response, db: Session = Depends(ge
     # return Token(access_token=access_token, token_type="bearer")
     response.set_cookie(
         key="access_token",
-        # value=access_token,
+        value=access_token,
         httponly=True,
         secure=False,
-        samesite="lax"
-        # max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60  # Expires in minutes
+        samesite="lax",
+        max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60,  # Expires in minutes
     )
     # return Token(access_token=access_token, token_type="bearer")
     return {
