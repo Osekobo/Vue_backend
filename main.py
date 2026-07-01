@@ -1,3 +1,5 @@
+from fastapi import HTTPException
+import json
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI, Depends, HTTPException, status, Response
 from sqlalchemy.orm import Session
@@ -30,6 +32,7 @@ from myjwt import (
     verify_password,
     create_access_token,
     get_current_user,
+    product_to_response
 )
 from mpesa import get_mpesa_access_token, generate_password, make_stk_push
 from fastapi import APIRouter
@@ -165,24 +168,118 @@ def get_users(
     return db.scalars(select(User)).all()
 
 
+# @app.get("/products", response_model=list[ProductGetMap])
+# def get_products(
+#     db: Session = Depends(get_db),
+#     current_user: User = Depends(get_current_user),
+# ):
+#     return db.scalars(select(Product)).all()
+
 @app.get("/products", response_model=list[ProductGetMap])
-def get_products(
+def get_products(db: Session = Depends(get_db),
+                 current_user: User = Depends(get_current_user)):
+    products = db.scalars(select(Product)).all()
+    return [product_to_response(p) for p in products]
+
+@app.get("/products/{product_id}", response_model=ProductGetMap)
+def get_product(
+    product_id: int,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    return db.scalars(select(Product)).all()
+    product = db.get(Product, product_id)
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+    return product_to_response(product)
 
 
 @app.post("/products", response_model=ProductGetMap)
-def create_product(product: ProductPostMap,
-                   db: Session = Depends(get_db),
-                   current_user: User = Depends(get_current_user),
-                   ):
-    model = Product(**product.dict())
+def create_product(product: ProductPostMap, db: Session = Depends(get_db),
+                   current_user: User = Depends(get_current_user)):
+    data = product.dict()
+    if not data.get("slug"):
+        data["slug"] = data["name"].lower().replace(" ", "-")
+    if not data.get("display_price"):
+        data["display_price"] = f"${data['selling_price']:,.0f}"
+    if data.get("features") is not None:
+        data["features"] = json.dumps(data["features"])
+    model = Product(**data)
     db.add(model)
     db.commit()
     db.refresh(model)
-    return model
+    return product_to_response(model)
+
+
+# ── PUT: Update an existing product ──
+
+@app.put("/products/{product_id}", response_model=ProductGetMap)
+def update_product(
+    product_id: int,
+    product: ProductPostMap,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    # 1. Find the product by ID
+    db_product = db.query(Product).filter(Product.id == product_id).first()
+    if not db_product:
+        raise HTTPException(status_code=404, detail="Product not found")
+
+    # 2. Prepare update data from the request body
+    data = product.dict()
+
+    # Auto‑generate slug if missing
+    if not data.get("slug"):
+        data["slug"] = data["name"].lower().replace(" ", "-")
+
+    # Auto‑format display_price if missing
+    if not data.get("display_price"):
+        data["display_price"] = f"${data['selling_price']:,.0f}"
+
+    # Convert features list to JSON string for DB storage
+    if data.get("features") is not None:
+        data["features"] = json.dumps(data["features"])
+
+    # 3. Update the product object with new values
+    for key, value in data.items():
+        setattr(db_product, key, value)
+
+    # 4. Commit the changes
+    db.commit()
+    db.refresh(db_product)
+
+    # 5. Return the updated product using your helper
+    return product_to_response(db_product)
+
+
+# ── DELETE: Remove a product ──
+@app.delete("/products/{product_id}")
+def delete_product(
+    product_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    # 1. Find the product
+    db_product = db.query(Product).filter(Product.id == product_id).first()
+    if not db_product:
+        raise HTTPException(status_code=404, detail="Product not found")
+
+    # 2. Delete it
+    db.delete(db_product)
+    db.commit()
+
+    # 3. Return a success message
+    return {"message": "Product deleted successfully"}
+
+# @app.post("/products", response_model=ProductGetMap)
+# def create_product(product: ProductPostMap,
+#                    db: Session = Depends(get_db),
+#                    current_user: User = Depends(get_current_user),
+#                    ):
+#     model = Product(**product.dict())
+#     db.add(model)
+#     db.commit()
+#     db.refresh(model)
+#     return model
 
 
 @app.get("/sales", response_model=list[SaleGetMap])
@@ -215,13 +312,19 @@ def create_sale(
     return model
 
 
+# @app.get("/purchase", response_model=list[PurchaseGetMap])
+# def get_purchases(
+#         db: Session = Depends(get_db),
+#         current_user: User = Depends(get_current_user),
+# ):
+#     return db.scalars(select(Purchase)).all()
 @app.get("/purchase", response_model=list[PurchaseGetMap])
 def get_purchases(
-        db: Session = Depends(get_db),
-        current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
-    return db.scalars(select(Purchase)).all()
-
+    purchases = db.scalars(select(Purchase)).all()
+    return purchases  # SQLAlchemy will load the product relationship automatically
 
 @app.post("/purchase", response_model=PurchaseGetMap, status_code=201)
 def create_purchase(
@@ -229,6 +332,12 @@ def create_purchase(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    # 1. Check if product exists
+    product = db.get(Product, purchase.product_id)
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+
+    # 2. Create new purchase
     new_purchase = Purchase(
         quantity=purchase.quantity,
         product_id=purchase.product_id
@@ -236,7 +345,27 @@ def create_purchase(
     db.add(new_purchase)
     db.commit()
     db.refresh(new_purchase)
+
+    # 3. Return the purchase with product relationship loaded
+    #    We can eager-load it to avoid extra query, but SQLAlchemy will lazy-load if needed.
     return new_purchase
+
+
+
+# @app.post("/purchase", response_model=PurchaseGetMap, status_code=201)
+# def create_purchase(
+#     purchase: PurchasePostMap,
+#     db: Session = Depends(get_db),
+#     current_user: User = Depends(get_current_user),
+# ):
+#     new_purchase = Purchase(
+#         quantity=purchase.quantity,
+#         product_id=purchase.product_id
+#     )
+#     db.add(new_purchase)
+#     db.commit()
+#     db.refresh(new_purchase)
+#     return new_purchase
 
 
 @app.get("/dashboard/spp", response_model=List[SalesPerProductOut])

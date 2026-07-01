@@ -1,6 +1,6 @@
 from pydantic import BaseModel, EmailStr
 from datetime import datetime, date
-from typing import Optional
+from typing import Optional,List
 
 
 class UserPostRegister(BaseModel):
@@ -30,12 +30,82 @@ class ProductPostMap(BaseModel):
     year: int
     condition: str
     fuel: str
+
+    # ── New fields for frontend (all optional) ──
+    # URL-friendly identifier (e.g., 'lamborghini-aventador')
+    slug: Optional[str] = None
+
+    # Display subtitle under car name (e.g., "V12 · 759 hp")
+    subtitle: Optional[str] = None
+
+    # Display price string (e.g., "$350,000"). If not provided, we format from selling_price.
+    display_price: Optional[str] = None
+
+    # Badge/status (e.g., "New", "Featured", "Hybrid", "Luxury")
+    badge: Optional[str] = "Featured"
+
+    # Category for filtering (e.g., "sports", "luxury", "electric", "hypercar")
+    category: Optional[str] = "luxury"
+
+    # Image URLs
+    image: Optional[str] = None
+    hero_image: Optional[str] = None
+
+    # Specifications
+    engine: Optional[str] = None
+    horsepower: Optional[str] = None
+    top_speed: Optional[str] = None
+    zero_to_sixty: Optional[str] = None
+    transmission: Optional[str] = None
+    drivetrain: Optional[str] = None
+
+    # Description
+    description: Optional[str] = None
+
+    # Features as a list of strings (e.g., ["Full Service History", "12-Month Warranty"])
+    # Will be stored as JSON string in DB
+    features: Optional[List[str]] = None
     # created_at: str
 
 
-class ProductGetMap(ProductPostMap):
-    id: int
+# class ProductGetMap(ProductPostMap):
+    # id: int
 
+from pydantic import BaseModel
+from typing import Optional, List
+from datetime import datetime
+
+class ProductGetMap(BaseModel):
+    id: int
+    name: str
+    buying_price: float
+    selling_price: float
+    model: str
+    year: int
+    condition: str
+    fuel: str
+    created_at: datetime
+    updated_at: datetime
+
+    # New fields
+    slug: Optional[str]
+    subtitle: Optional[str]
+    display_price: Optional[str]
+    badge: Optional[str]
+    category: Optional[str]
+    image: Optional[str]
+    hero_image: Optional[str]
+    engine: Optional[str]
+    horsepower: Optional[str]
+    top_speed: Optional[str]
+    zero_to_sixty: Optional[str]
+    transmission: Optional[str]
+    drivetrain: Optional[str]
+    description: Optional[str]
+    features: Optional[List[str]] = []  # will be parsed from JSON # <-- IMPORTANT: must be List[str], not JSON string
+
+    class Config:
+        from_attributes = True  # Pydantic v2 (formerly orm_mode = True)
 
 class RemainingPerProductMap(BaseModel):
     product_id: int
@@ -77,6 +147,25 @@ class PurchaseGetMap(PurchasePostMap):
     created_at: datetime
     updated_at: datetime
 
+     # ── Product details (nested) ──
+    product: Optional["ProductGetMap"] = None
+
+    # ── Computed fields ──
+    @property
+    def total_buying_cost(self) -> float:
+        if self.product:
+            return self.quantity * self.product.buying_price
+        return 0.0
+
+    @property
+    def total_selling_value(self) -> float:
+        if self.product:
+            return self.quantity * self.product.selling_price
+        return 0.0
+
+    class Config:
+        from_attributes = True
+
 
 class SalesPerProductOut(BaseModel):
     product_id: int
@@ -113,11 +202,12 @@ class TokenData(BaseModel):
     email: str | None = None
     scopes: list[str] = []
 
+
 class PaymentResponse(BaseModel):
     id: int
     sale_id: str
-    merchant_request_id: Optional[str]=None
-    checkout_request_id: Optional[str]=None
+    merchant_request_id: Optional[str] = None
+    checkout_request_id: Optional[str] = None
     trans_code: str | None
     trans_amount: float | None
     phone_paid: str | None
