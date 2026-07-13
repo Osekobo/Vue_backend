@@ -75,6 +75,11 @@ from pydantic import BaseModel
 from typing import Optional, List
 from datetime import datetime
 
+from pydantic import BaseModel, field_validator
+from datetime import datetime
+from typing import Optional, List
+import json
+
 class ProductGetMap(BaseModel):
     id: int
     name: str
@@ -87,22 +92,39 @@ class ProductGetMap(BaseModel):
     created_at: datetime
     updated_at: datetime
 
-    # New fields
-    slug: Optional[str]
-    subtitle: Optional[str]
-    display_price: Optional[str]
-    badge: Optional[str]
-    category: Optional[str]
-    image: Optional[str]
-    hero_image: Optional[str]
-    engine: Optional[str]
-    horsepower: Optional[str]
-    top_speed: Optional[str]
-    zero_to_sixty: Optional[str]
-    transmission: Optional[str]
-    drivetrain: Optional[str]
-    description: Optional[str]
-    features: Optional[List[str]] = []  # will be parsed from JSON # <-- IMPORTANT: must be List[str], not JSON string
+    slug: Optional[str] = None
+    subtitle: Optional[str] = None
+    display_price: Optional[str] = None
+    badge: Optional[str] = None
+    category: Optional[str] = None
+    image: Optional[str] = None
+    hero_image: Optional[str] = None
+    engine: Optional[str] = None
+    horsepower: Optional[str] = None
+    top_speed: Optional[str] = None
+    zero_to_sixty: Optional[str] = None
+    transmission: Optional[str] = None
+    drivetrain: Optional[str] = None
+    description: Optional[str] = None
+    features: Optional[List[str]] = []   # expects list, but DB gives JSON string
+
+    @field_validator('features', mode='before')
+    @classmethod
+    def parse_features(cls, v):
+        # If it's already a list (or None), return as is
+        if v is None or isinstance(v, list):
+            return v
+        # If it's a JSON string, parse it
+        if isinstance(v, str):
+            try:
+                parsed = json.loads(v)
+                # Ensure it's a list of strings
+                if isinstance(parsed, list):
+                    return parsed
+            except json.JSONDecodeError:
+                pass
+        # Fallback: return empty list
+        return []
 
     class Config:
         from_attributes = True  # Pydantic v2 (formerly orm_mode = True)

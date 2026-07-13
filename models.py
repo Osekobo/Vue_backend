@@ -3,7 +3,7 @@ from sqlalchemy import Column, Integer, String, DateTime, Float, Text
 from sqlalchemy.orm import Mapped, mapped_column, DeclarativeBase
 from sqlalchemy import String, Float, Integer, DateTime, create_engine
 from typing import List
-from sqlalchemy import ForeignKey
+from sqlalchemy import ForeignKey, JSON
 from sqlalchemy.orm import relationship, sessionmaker
 from datetime import datetime
 
@@ -72,9 +72,9 @@ class Product(Base):
     category: Mapped[str] = mapped_column(String(50), nullable=True)
 
     # Image URLs
-    image: Mapped[str] = mapped_column(String(512), nullable=True)
-    hero_image: Mapped[str] = mapped_column(String(512), nullable=True)
-
+    # image: Mapped[str] = mapped_column(Text, nullable=True)
+    image: Mapped[str] = mapped_column(Text, nullable=True)
+    hero_image: Mapped[str] = mapped_column(Text, nullable=True)
     # Specifications
     engine: Mapped[str] = mapped_column(String(100), nullable=True)
     horsepower: Mapped[str] = mapped_column(String(50), nullable=True)
@@ -88,6 +88,7 @@ class Product(Base):
 
     # Features as JSON array (e.g., ["Full Service History", "12-Month Warranty"])
     features: Mapped[str] = mapped_column(Text, nullable=True)  # JSON string
+    # features: Mapped[list] = mapped_column(JSON, nullable=True)
 
 
 class Sale(Base):
