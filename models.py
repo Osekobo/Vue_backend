@@ -1,15 +1,16 @@
-from sqlalchemy import Column, Integer, String, DateTime, Float
+from sqlalchemy import Column, Integer, String, DateTime, Float, Text
 # from database import Base
 from sqlalchemy.orm import Mapped, mapped_column, DeclarativeBase
 from sqlalchemy import String, Float, Integer, DateTime, create_engine
 from typing import List
-from sqlalchemy import ForeignKey
+from sqlalchemy import ForeignKey, JSON
 from sqlalchemy.orm import relationship, sessionmaker
 from datetime import datetime
 
 # DATABASE_URL = "postgresql://postgres:12039@localhost:5432/vue"
+DATABASE_URL = "postgresql://postgres:12039@my_postgres:5432/vue"
 # DATABASE_URL = "postgresql://postgres:12039@my_postgres:5432/vue"
-DATABASE_URL = "postgresql://postgres:12039@postgres_database:5432/vue"
+# DATABASE_URL = "postgresql://postgres:12039@postgres_database:5432/vue"
 # DATABASE_URL = "sqlite:///./vue.db"
 
 # engine = create_engine(DATABASE_URL)
@@ -54,6 +55,42 @@ class Product(Base):
         cascade="all, delete-orphan"
     )
 
+    # ── NEW fields for frontend display (add these) ──
+    # Used as URL-friendly identifier (e.g., 'lamborghini-aventador')
+    slug: Mapped[str] = mapped_column(String(256), nullable=True, unique=True)
+
+    # Subtitle shown under car name (e.g., "V12 · 759 hp")
+    subtitle: Mapped[str] = mapped_column(String(256), nullable=True)
+
+    # Display price on frontend (e.g., "$350,000")
+    # You can derive this from selling_price, or keep as separate field
+    display_price: Mapped[str] = mapped_column(String(50), nullable=True)
+
+    # Badge/status (e.g., "New", "Featured", "Hybrid", "Luxury")
+    badge: Mapped[str] = mapped_column(String(50), nullable=True)
+
+    # Category for filtering (e.g., "sports", "luxury", "electric", "hypercar")
+    category: Mapped[str] = mapped_column(String(50), nullable=True)
+
+    # Image URLs
+    # image: Mapped[str] = mapped_column(Text, nullable=True)
+    image: Mapped[str] = mapped_column(Text, nullable=True)
+    hero_image: Mapped[str] = mapped_column(Text, nullable=True)
+    # Specifications
+    engine: Mapped[str] = mapped_column(String(100), nullable=True)
+    horsepower: Mapped[str] = mapped_column(String(50), nullable=True)
+    top_speed: Mapped[str] = mapped_column(String(50), nullable=True)
+    zero_to_sixty: Mapped[str] = mapped_column(String(20), nullable=True)
+    transmission: Mapped[str] = mapped_column(String(50), nullable=True)
+    drivetrain: Mapped[str] = mapped_column(String(50), nullable=True)
+
+    # Description
+    description: Mapped[str] = mapped_column(Text, nullable=True)
+
+    # Features as JSON array (e.g., ["Full Service History", "12-Month Warranty"])
+    features: Mapped[str] = mapped_column(Text, nullable=True)  # JSON string
+    # features: Mapped[list] = mapped_column(JSON, nullable=True)
+
 
 class Sale(Base):
     __tablename__ = "sales"
@@ -97,11 +134,10 @@ class Purchase(Base):
     __tablename__ = "purchases"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-
     quantity: Mapped[float] = mapped_column(Float, nullable=False)
 
     product_id: Mapped[int] = mapped_column(
-        ForeignKey("products.id"), nullable=False
+        ForeignKey("products.id", ondelete="CASCADE"), nullable=False
     )
 
     created_at: Mapped[datetime] = mapped_column(
@@ -111,6 +147,7 @@ class Purchase(Base):
         DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
     )
 
+    # ── Relationship to Product ──
     product: Mapped["Product"] = relationship(back_populates="purchases")
 
 
