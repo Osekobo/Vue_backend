@@ -7,8 +7,8 @@ from sqlalchemy import ForeignKey, JSON
 from sqlalchemy.orm import relationship, sessionmaker
 from datetime import datetime
 
-DATABASE_URL = "postgresql://postgres:12039@localhost:5432/vue"
-# DATABASE_URL = "postgresql://postgres:12039@my_postgres:5432/vue"
+# DATABASE_URL = "postgresql://postgres:12039@localhost:5432/vue"
+DATABASE_URL = "postgresql://postgres:12039@my_postgres:5432/vue"
 # DATABASE_URL = "postgresql://postgres:12039@postgres_database:5432/vue"
 # DATABASE_URL = "sqlite:///./vue.db"
 
