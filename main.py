@@ -181,6 +181,7 @@ def get_products(db: Session = Depends(get_db),
     products = db.scalars(select(Product)).all()
     return [product_to_response(p) for p in products]
 
+
 @app.get("/products/{product_id}", response_model=ProductGetMap)
 def get_product(
     product_id: int,
@@ -208,6 +209,36 @@ def create_product(product: ProductPostMap, db: Session = Depends(get_db),
     db.commit()
     db.refresh(model)
     return product_to_response(model)
+
+
+@app.post("/products/bulk", response_model=List[ProductGetMap])
+def create_products_bulk(
+    products: List[ProductPostMap],
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    created = []
+    for product in products:
+        data = product.dict()
+        if not data.get("slug"):
+            data["slug"] = data["name"].lower().replace(" ", "-")
+        if not data.get("display_price"):
+            data["display_price"] = f"${data['selling_price']:,.0f}"
+        if data.get("features") is not None:
+            data["features"] = json.dumps(data["features"])
+        # Check for existing product by slug to avoid duplicate key error
+        existing = db.query(Product).filter(
+            Product.slug == data["slug"]).first()
+        if existing:
+            # skip or update? The user may want to skip. We'll skip.
+            continue
+        model = Product(**data)
+        db.add(model)
+        created.append(model)
+    db.commit()
+    for model in created:
+        db.refresh(model)
+    return [product_to_response(p) for p in created]
 
 
 # ── PUT: Update an existing product ──
@@ -326,6 +357,7 @@ def get_purchases(
     purchases = db.scalars(select(Purchase)).all()
     return purchases  # SQLAlchemy will load the product relationship automatically
 
+
 @app.post("/purchase", response_model=PurchaseGetMap, status_code=201)
 def create_purchase(
     purchase: PurchasePostMap,
@@ -349,7 +381,6 @@ def create_purchase(
     # 3. Return the purchase with product relationship loaded
     #    We can eager-load it to avoid extra query, but SQLAlchemy will lazy-load if needed.
     return new_purchase
-
 
 
 # @app.post("/purchase", response_model=PurchaseGetMap, status_code=201)
