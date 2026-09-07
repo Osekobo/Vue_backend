@@ -3,3 +3,8 @@
 text
 .env.*
 # requirements.txt
+
+__pycache__/
+*.py[cod]
+.venv/
+.env
